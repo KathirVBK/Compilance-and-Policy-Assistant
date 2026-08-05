@@ -1,0 +1,1 @@
+Analyze the user's query and extract the core search concepts, policy names, and departmental categories (e.g., HR, IT, Finance) to target the most relevant sections of the handbooks.
