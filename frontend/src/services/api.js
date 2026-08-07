@@ -7,11 +7,11 @@ export const api = {
     return res.json();
   },
 
-  async queryAgent(query, model, history = [], sessionId = null) {
+  async queryAgent(query, model, history = [], sessionId = null, targetDoc = null) {
     const res = await fetch(`${API_BASE}/query`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, model, history, session_id: sessionId })
+      body: JSON.stringify({ query, model, history, session_id: sessionId, target_doc: targetDoc })
     });
     if (!res.ok) throw new Error("Failed to process query");
     return res.json();

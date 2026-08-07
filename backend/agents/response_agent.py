@@ -100,20 +100,10 @@ def generate_answer(query, intent_results, retrieved_chunks, model_override=None
 
     llm_response = gemini.generate_response(user_prompt, system_instruction, model_override)
     
-    # Strip all source markers, inline [Source X] references, and trailing source blocks
-    import re
-    llm_response = re.sub(r'\n+\*?\s*(?:Source|Sources|References|Based on the Employee Handbook|Based on the provided sources)[^\n]*.*$', '', llm_response, flags=re.IGNORECASE | re.DOTALL).strip()
-    llm_response = re.sub(r'\*?\s*Source:\s*.*$', '', llm_response, flags=re.IGNORECASE | re.DOTALL).strip()
-    llm_response = re.sub(r'\[?\bSource\s*\[?\d+\]?\]?:?', '', llm_response, flags=re.IGNORECASE).strip()
-    llm_response = re.sub(r'\[\d+\]', '', llm_response).strip()
-    llm_response = re.sub(r'\(\s*\)', '', llm_response).strip()
-    llm_response = re.sub(r'\*\s*\(\s*$', '', llm_response).strip()
-    
-    # Strip any opening source preamble phrases (e.g. "Based on the provided context,", "According to the handbook,")
-    llm_response = re.sub(r'^(?:Based on the (?:provided|retrieved|official|Employee) (?:context|policy|sources|handbook|documents?)[,\s]*|According to the (?:employee )?handbook[,\s]*|\(Endeavors\)\s*v?\d*\.?\d*,?\s*)+', '', llm_response, flags=re.IGNORECASE).strip()
     if llm_response and llm_response[0].islower():
         llm_response = llm_response[0].upper() + llm_response[1:]
 
+    import re
     # Remove all raw asterisks (*) to eliminate AI-generated raw markdown look
     llm_response = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', llm_response)
     llm_response = re.sub(r'^\s*[*]\s+', '• ', llm_response, flags=re.MULTILINE)

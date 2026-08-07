@@ -69,8 +69,8 @@ class ComplianceGraph:
             state.retrieved_chunks = []
         else:
             # Node 2: Document Retrieval using Rewritten Standalone Query
-            Logger.info(f"Routing standalone query '{target_query}' to retrieval node.")
-            chunks = retrieval_agent.retrieve_context(target_query)
+            Logger.info(f"Routing standalone query '{target_query}' to retrieval node (Target Doc: {state.target_doc}).")
+            chunks = retrieval_agent.retrieve_context(target_query, target_doc=state.target_doc)
             state.retrieved_chunks = chunks
             
         # Node 3: Response Generation (Pass History separately from retrieval)
@@ -108,8 +108,8 @@ class ComplianceGraph:
 # Singleton instance
 graph = ComplianceGraph()
 
-def run_workflow(query, model=None, history=None, session_id=None):
+def run_workflow(query, model=None, history=None, session_id=None, target_doc=None):
     """Entry point to run the agent graph workflow"""
-    state = AgentState(query=query, model_override=model, history=history, session_id=session_id)
+    state = AgentState(query=query, model_override=model, history=history, session_id=session_id, target_doc=target_doc)
     final_state = graph.execute(state)
     return final_state.response

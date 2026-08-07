@@ -21,6 +21,7 @@ class QueryRequest(BaseModel):
     model: Optional[str] = None
     history: Optional[list] = None
     session_id: Optional[str] = None
+    target_doc: Optional[str] = None
 
 class TTSRequest(BaseModel):
     text: str
@@ -40,7 +41,7 @@ async def process_query(req: QueryRequest):
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
     try:
-        response = run_workflow(req.query, req.model, req.history, req.session_id)
+        response = run_workflow(req.query, req.model, req.history, req.session_id, req.target_doc)
         return response
     except Exception as e:
         Logger.error(f"Error processing graph workflow: {e}")

@@ -10,3 +10,4 @@ class AgentState(BaseModel):
     retrieved_chunks: Optional[List[Dict[str, Any]]] = None
     response: Optional[Dict[str, Any]] = None
     model_override: Optional[str] = None
+    target_doc: Optional[str] = None

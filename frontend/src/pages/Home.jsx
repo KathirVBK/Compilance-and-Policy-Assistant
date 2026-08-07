@@ -20,6 +20,7 @@ export const Home = () => {
   const [loading, setLoading] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
+  const [targetDocument, setTargetDocument] = useState('All Policies');
 
   const [savedSessions, setSavedSessions] = useState(() => {
     try {
@@ -89,7 +90,8 @@ export const Home = () => {
     setLoading(true);
 
     try {
-      const res = await api.queryAgent(query, _selectedModel, historyPayload, sessionId);
+      const target = targetDocument === 'All Policies' ? null : targetDocument;
+      const res = await api.queryAgent(query, _selectedModel, historyPayload, sessionId, target);
       
       const finalMessages = [...newMessagesWithUser, { 
         sender: 'assistant', 
@@ -166,12 +168,10 @@ export const Home = () => {
         {/* Branding Section */}
         <div className="sidebar-branding">
           <div className="brand-logo-wrapper">
-            <div className="orb-neon">
-              <ShieldCheck size={16} />
-            </div>
+            <img src="/logo.png" alt="Policy Buddy Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
           </div>
           <div className="brand-text-group">
-            <h1>COMPLIANCE<span>.AI</span></h1>
+            <h1>POLICY<span> BUDDY</span></h1>
             <span className="sidebar-subtag">Policy Q&A Self-Service</span>
           </div>
         </div>
@@ -349,6 +349,38 @@ export const Home = () => {
         />
 
         {loading && <Loader />}
+
+        <div className="target-doc-selector" style={{ 
+            padding: '0 24px', 
+            marginTop: 'auto', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px', 
+            fontSize: '12px',
+            color: 'var(--text-muted)'
+        }}>
+            <FileText size={14} />
+            <span>Chatting with:</span>
+            <select 
+                value={targetDocument} 
+                onChange={(e) => setTargetDocument(e.target.value)}
+                style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    color: 'var(--text-main)',
+                    outline: 'none',
+                    cursor: 'pointer'
+                }}
+            >
+                <option value="All Policies">All Policies (Global Search)</option>
+                {documents.map((doc, idx) => (
+                    <option key={idx} value={doc.title}>{doc.title}</option>
+                ))}
+            </select>
+        </div>
 
         <ChatInput onSend={handleSendQuery} disabled={loading} />
       </main>
