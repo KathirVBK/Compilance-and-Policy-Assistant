@@ -11,3 +11,4 @@ class AgentState(BaseModel):
     response: Optional[Dict[str, Any]] = None
     model_override: Optional[str] = None
     target_doc: Optional[str] = None
+    user_role: Optional[str] = "employee"   # RBAC: role passed from authenticated user

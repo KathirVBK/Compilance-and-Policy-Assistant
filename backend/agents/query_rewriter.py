@@ -42,12 +42,12 @@ def rewrite_query(query: str, history: List[Dict[str, str]] = None) -> str:
     # Format history turns
     history_text = ""
     if has_history:
-        recent_history = history[-4:]
+        recent_history = history[-10:]  # Extended from 4 to 10 for richer multi-turn context
         for msg in recent_history:
             sender = "User" if msg.get("sender") == "user" else "Assistant"
             text = msg.get("text", "")
-            if sender == "Assistant" and len(text) > 300:
-                text = text[:300] + "..."
+            if sender == "Assistant" and len(text) > 500:
+                text = text[:500] + "..."
             history_text += f"{sender}: {text}\n"
 
     user_prompt = (

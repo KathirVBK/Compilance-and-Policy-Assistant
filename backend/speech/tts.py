@@ -23,7 +23,7 @@ def text_to_speech(text, output_audio_path):
     
     try:
         Logger.info("Requesting TTS audio stream...")
-        response = requests.post(url, headers=headers, json=payload, timeout=20, stream=True)
+        response = requests.post(url, headers=headers, json=payload, timeout=60, stream=True)
         if response.status_code == 200:
             os.makedirs(os.path.dirname(output_audio_path), exist_ok=True)
             with open(output_audio_path, 'wb') as f:

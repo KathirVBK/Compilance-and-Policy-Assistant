@@ -3,7 +3,7 @@ from backend.llm import gemini
 from backend.utils.logger import Logger
 
 SYSTEM_FOLLOWUP_PROMPT = (
-    "You are a Proactive Compliance Assistant. Given the user query, generated answer, and retrieved policy section metadata, "
+    "You are a Proactive Compliance Assistant. Given the user query and retrieved policy section metadata, "
     "generate 2-3 highly relevant, self-contained follow-up questions an employee might ask next.\n\n"
     "STRICT GROUNDING & QUALITY RULES:\n"
     "1. GROUNDED IN RETRIEVED SECTIONS: Base suggestions directly on adjacent topics, procedures, exceptions, or parameters "
@@ -18,9 +18,9 @@ SYSTEM_FOLLOWUP_PROMPT = (
     "• What notice period is required before taking scheduled PTO?"
 )
 
-def generate_followup_suggestions(query: str, answer: str, retrieved_chunks: List[Dict[str, str]] = None) -> List[str]:
+def generate_followup_suggestions(query: str, retrieved_chunks: List[Dict[str, str]] = None) -> List[str]:
     """
-    Generates 2-3 grounded, self-contained follow-up questions based on answer & chunk metadata.
+    Generates 2-3 grounded, self-contained follow-up questions based on chunk metadata.
     """
     if not retrieved_chunks or len(retrieved_chunks) == 0:
         return [
@@ -42,8 +42,7 @@ def generate_followup_suggestions(query: str, answer: str, retrieved_chunks: Lis
     user_prompt = (
         f"User Query: {query}\n"
         f"Retrieved Policy Sections: {sections_str}\n"
-        f"Retrieved Context Snippets:\n{chunk_snippets}\n"
-        f"Generated Answer Preview: {answer[:300]}...\n\n"
+        f"Retrieved Context Snippets:\n{chunk_snippets}\n\n"
         f"Grounded Follow-up Questions:"
     )
 

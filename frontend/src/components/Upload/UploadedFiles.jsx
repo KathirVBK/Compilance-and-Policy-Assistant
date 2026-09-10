@@ -5,7 +5,7 @@ import { api } from '../../services/api';
 export const UploadedFiles = ({ documents, onDeleteSuccess }) => {
   const handleDelete = async (title, source) => {
     if (source === 'Enterprise') {
-      alert("🛡️ Enterprise Core policies are read-only and cannot be deleted.");
+      alert("Enterprise Core policies are read-only and cannot be deleted.");
       return;
     }
     
@@ -16,7 +16,7 @@ export const UploadedFiles = ({ documents, onDeleteSuccess }) => {
       if (onDeleteSuccess) onDeleteSuccess();
     } catch (err) {
       console.error(err);
-      alert("❌ Failed to delete document. Please try again.");
+      alert("Failed to delete document. Please try again.");
     }
   };
 

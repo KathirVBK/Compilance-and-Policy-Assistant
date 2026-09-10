@@ -30,7 +30,7 @@ def generate_response(prompt, system_instruction=None, model_override=None):
     
     try:
         Logger.info(f"Sending request to custom LLM api: {model}")
-        response = requests.post(url, headers=headers, json=payload, timeout=25)
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
         if response.status_code == 200:
             return response.json()['choices'][0]['message']['content']
         else:

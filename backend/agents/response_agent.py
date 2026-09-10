@@ -12,7 +12,7 @@ def generate_answer(query, intent_results, retrieved_chunks, model_override=None
             "query": query,
             "model": model_override or "gemini-2.5-flash",
             "answer": (
-                "⚠️ **Compliance Escalation Warning**: Your query contains terms related to high-risk legal/ethical violations. "
+                "**Compliance Escalation Warning**: Your query contains terms related to high-risk legal/ethical violations. "
                 "In accordance with corporate compliance guidelines, this query has been automatically logged and routed to "
                 "the Human Legal & Compliance Department.\n\n"
                 "For your reference, Endeavors enforces a zero-tolerance policy towards fraud, bribery, corruption, "
@@ -62,7 +62,7 @@ def generate_answer(query, intent_results, retrieved_chunks, model_override=None
             "query": query,
             "model": model_override or "gemini-2.5-flash",
             "answer": (
-                "ℹ️ **No Relevant Policy Content Found**: No matching company policy documents or sections "
+                "**No Relevant Policy Content Found**: No matching company policy documents or sections "
                 "were found in the knowledge base above the relevance threshold for your query.\n\n"
                 "Please verify whether this topic is covered under official employee handbooks, or try rephrasing your question with specific terms."
             ),
@@ -98,7 +98,15 @@ def generate_answer(query, intent_results, retrieved_chunks, model_override=None
     system_instruction = prompts.get_system_prompt()
     user_prompt = prompts.get_response_prompt(context_text, query, history)
 
-    llm_response = gemini.generate_response(user_prompt, system_instruction, model_override)
+    import concurrent.futures
+    from backend.agents import followup_agent
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        future_llm = executor.submit(gemini.generate_response, user_prompt, system_instruction, model_override)
+        future_followups = executor.submit(followup_agent.generate_followup_suggestions, query, retrieved_chunks)
+        
+        llm_response = future_llm.result()
+        followups = future_followups.result()
     
     if llm_response and llm_response[0].islower():
         llm_response = llm_response[0].upper() + llm_response[1:]
@@ -109,9 +117,9 @@ def generate_answer(query, intent_results, retrieved_chunks, model_override=None
     llm_response = re.sub(r'^\s*[*]\s+', '• ', llm_response, flags=re.MULTILINE)
     llm_response = llm_response.replace('*', '')
 
-    # Generate metadata-grounded follow-up suggestions
-    from backend.agents import followup_agent
-    followups = followup_agent.generate_followup_suggestions(query, llm_response, retrieved_chunks)
+    # Remove inline source citations like [Source 1], [Source 3, 4]
+    llm_response = re.sub(r'\s*\[Source\s*[\d,\s]+\]', '', llm_response, flags=re.IGNORECASE)
+
     if followups and len(followups) > 0:
         llm_response += "\n\nFollow-up Questions:\n" + "\n".join([f"• {q}" for q in followups])
 

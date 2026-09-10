@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { ChatMessage } from './ChatMessage';
-import { VoicePlayer } from '../Voice/VoicePlayer';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 
 export const ChatWindow = ({ messages, onSuggestClick }) => {
@@ -14,22 +13,18 @@ export const ChatWindow = ({ messages, onSuggestClick }) => {
 
   const suggestions = [
     {
-      icon: '👔',
       text: "What is the dress code policy? Can I wear shorts?",
       category: "Workplace"
     },
     {
-      icon: '📋',
       text: "How much notice do I need to give if I decide to resign?",
       category: "HR Policy"
     },
     {
-      icon: '⚠️',
       text: "Can I offer a cash bribe to a public official?",
       category: "Compliance"
     },
     {
-      icon: '💚',
       text: "What are the bereavement leave limits for full-time employees?",
       category: "Benefits"
     }
@@ -88,11 +83,6 @@ export const ChatWindow = ({ messages, onSuggestClick }) => {
           messages.map((msg, idx) => (
             <div key={idx} className="message-wrapper">
               <ChatMessage message={msg} onSuggestClick={onSuggestClick} />
-              {msg.sender === 'assistant' && msg.status !== 'escalated' && msg.text && (
-                <div className="message-actions-bar">
-                  <VoicePlayer text={msg.text} />
-                </div>
-              )}
             </div>
           ))
         )}

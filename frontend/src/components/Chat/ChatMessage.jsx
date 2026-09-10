@@ -1,5 +1,6 @@
 import React from 'react';
 import { Bot, User, ShieldAlert, AlertTriangle, ArrowRight, HelpCircle, Clock } from 'lucide-react';
+import { VoicePlayer } from '../Voice/VoicePlayer';
 
 export const ChatMessage = ({ message, onSuggestClick }) => {
   const { sender, text, status, timestamp } = message;
@@ -152,6 +153,12 @@ export const ChatMessage = ({ message, onSuggestClick }) => {
         <div className="message-content-md">
           {parseMarkdown(mainText)}
         </div>
+
+        {!isUser && status !== 'escalated' && mainText && (
+          <div className="message-actions-bar" style={{ marginTop: '8px', marginBottom: '8px' }}>
+            <VoicePlayer text={mainText} />
+          </div>
+        )}
 
         {/* Interactive Follow-up Questions */}
         {!isUser && followUps.length > 0 && (
