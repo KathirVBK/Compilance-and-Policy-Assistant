@@ -86,19 +86,26 @@ class VectorStore:
                 if norm > 0:
                     np_vec = np_vec / norm
                 vectors.append(np_vec)
+                parent_section = chunk.get('parent_section', section_title) if isinstance(chunk, dict) else section_title
+                end_page       = chunk.get('end_page', page_number) if isinstance(chunk, dict) else page_number
+                token_est      = chunk.get('token_estimate', len(chunk_text) // 4) if isinstance(chunk, dict) else len(chunk_text) // 4
+
                 new_metadata.append({
-                    "id":            f"{title}_chunk_{idx}_{np.random.randint(1000, 9999)}",
-                    "docTitle":      title,
-                    "section":       section_title,
-                    "page":          page_number,
-                    "category":      category,
-                    "content":       full_text,
-                    "rawText":       chunk_text,
-                    "version":       version,
-                    "date":          date,
-                    "author":        author,
-                    "tags":          doc_tags,            # NEW: searchable tags
-                    "allowed_roles": doc_allowed_roles,   # NEW: RBAC role list
+                    "id":             f"{title}_chunk_{idx}_{np.random.randint(1000, 9999)}",
+                    "docTitle":       title,
+                    "section":        section_title,
+                    "parent_section": parent_section,
+                    "page":           page_number,
+                    "end_page":       end_page,
+                    "token_estimate": token_est,
+                    "category":       category,
+                    "content":        full_text,
+                    "rawText":        chunk_text,
+                    "version":        version,
+                    "date":           date,
+                    "author":         author,
+                    "tags":           doc_tags,
+                    "allowed_roles":  doc_allowed_roles,
                 })
 
         if vectors:
@@ -107,6 +114,77 @@ class VectorStore:
             self.metadata.extend(new_metadata)
             self.save()
             Logger.info(f"Successfully added '{title}' ({len(vectors)} chunks) to index.")
+            return True
+        return False
+
+    def add_structured_chunks(
+        self,
+        title: str,
+        category: str,
+        chunks: list,
+        version: str = "1.0",
+        date: str = "2025-01-01",
+        author: str = "Unknown",
+        tags: list = None,
+        allowed_roles: list = None,
+    ) -> bool:
+        """
+        High-quality indexing path: accepts a list of pre-chunked dicts
+        (from text_splitter.split_text on structured blocks) so that section,
+        parent_section, page, and token_estimate metadata are all preserved.
+        Each chunk dict must have at minimum: { 'text': str }.
+        """
+        doc_tags          = tags or []
+        doc_allowed_roles = allowed_roles or []
+        vectors      = []
+        new_metadata = []
+
+        for idx, chunk in enumerate(chunks):
+            chunk_text     = chunk.get('text', '').strip() if isinstance(chunk, dict) else str(chunk).strip()
+            section_title  = chunk.get('section', 'General') if isinstance(chunk, dict) else 'General'
+            parent_section = chunk.get('parent_section', section_title) if isinstance(chunk, dict) else section_title
+            page_number    = chunk.get('page', 1) if isinstance(chunk, dict) else 1
+            end_page       = chunk.get('end_page', page_number) if isinstance(chunk, dict) else page_number
+            token_est      = chunk.get('token_estimate', len(chunk_text) // 4) if isinstance(chunk, dict) else len(chunk_text) // 4
+
+            if not chunk_text or len(chunk_text) < 30:
+                continue
+
+            prefix = f"[{title} | Section: {section_title} | Page {page_number}]\n"
+            full_text = prefix + chunk_text
+
+            Logger.info(f"Embedding structured chunk {idx+1}/{len(chunks)} '{title}' (Section: '{section_title[:40]}', Page: {page_number})...")
+            vec = get_embedding(full_text)
+            if vec is not None:
+                np_vec = np.array(vec, dtype=np.float32)
+                norm = np.linalg.norm(np_vec)
+                if norm > 0:
+                    np_vec = np_vec / norm
+                vectors.append(np_vec)
+                new_metadata.append({
+                    "id":             f"{title}_chunk_{idx}_{np.random.randint(1000, 9999)}",
+                    "docTitle":       title,
+                    "section":        section_title,
+                    "parent_section": parent_section,
+                    "page":           page_number,
+                    "end_page":       end_page,
+                    "token_estimate": token_est,
+                    "category":       category,
+                    "content":        full_text,
+                    "rawText":        chunk_text,
+                    "version":        version,
+                    "date":           date,
+                    "author":         author,
+                    "tags":           doc_tags,
+                    "allowed_roles":  doc_allowed_roles,
+                })
+
+        if vectors:
+            np_vectors = np.vstack(vectors)
+            self.index.add(np_vectors)
+            self.metadata.extend(new_metadata)
+            self.save()
+            Logger.info(f"Successfully structured-indexed '{title}' ({len(vectors)} chunks) to index.")
             return True
         return False
 
@@ -256,3 +334,31 @@ class VectorStore:
                 break
                 
         return [candidates[i] for i in selected]
+
+    def get_parent_context(self, chunk_id: str) -> str:
+        """
+        Parent-Child Retrieval: given a child chunk ID, returns concatenated text
+        of all sibling chunks sharing the same parent_section and docTitle.
+        Falls back to the chunk's own content if no siblings found.
+        """
+        # Find the target chunk
+        target = next((m for m in self.metadata if m.get("id") == chunk_id), None)
+        if not target:
+            return ""
+
+        parent_sec = target.get("parent_section", target.get("section", ""))
+        doc_title  = target.get("docTitle", "")
+
+        # Collect all sibling chunks in the same parent section
+        siblings = [
+            m for m in self.metadata
+            if m.get("docTitle") == doc_title
+            and m.get("parent_section", m.get("section", "")) == parent_sec
+        ]
+
+        if len(siblings) <= 1:
+            return target.get("rawText", target.get("content", ""))
+
+        # Sort siblings by page then chunk index order
+        siblings.sort(key=lambda m: (m.get("page", 0),))
+        return " ".join(s.get("rawText", s.get("content", "")) for s in siblings)

@@ -12,8 +12,7 @@ import { UploadedFiles } from '../components/Upload/UploadedFiles';
 import { Loader }        from '../components/UI/Loader';
 
 const ROLE_COLORS = {
-  admin:'#ef4444', hr:'#8b5cf6', finance:'#f59e0b',
-  legal:'#3b82f6', operations:'#10b981', employee:'#00f2fe'
+  admin:'#ef4444', hr:'#8b5cf6', employee:'#00f2fe'
 };
 
 export const Home = ({ currentUser, onLogout, onGoAdmin }) => {
@@ -29,9 +28,11 @@ export const Home = ({ currentUser, onLogout, onGoAdmin }) => {
   const [categories, setCategories]       = useState([]);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState(null);
 
+  const storageKey = `compliance_chat_sessions_${currentUser?.username || 'default'}`;
+
   const [savedSessions, setSavedSessions] = useState(() => {
     try {
-      const saved = localStorage.getItem('compliance_chat_sessions');
+      const saved = localStorage.getItem(storageKey);
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
@@ -71,7 +72,7 @@ export const Home = ({ currentUser, onLogout, onGoAdmin }) => {
       } else {
         newSessions = [sessionObj, ...prev];
       }
-      try { localStorage.setItem('compliance_chat_sessions', JSON.stringify(newSessions)); } catch {}
+      try { localStorage.setItem(storageKey, JSON.stringify(newSessions)); } catch {}
       return newSessions;
     });
   };
@@ -125,7 +126,7 @@ export const Home = ({ currentUser, onLogout, onGoAdmin }) => {
     e.stopPropagation();
     setSavedSessions(prev => {
       const updated = prev.filter(s => s.id !== sessId);
-      try { localStorage.setItem('compliance_chat_sessions', JSON.stringify(updated)); } catch {}
+      try { localStorage.setItem(storageKey, JSON.stringify(updated)); } catch {}
       return updated;
     });
     if (sessionId === sessId) handleNewChat();
@@ -256,15 +257,17 @@ export const Home = ({ currentUser, onLogout, onGoAdmin }) => {
         </div>
 
         {/* Footer Tools */}
-        <div className="sidebar-footer-tools">
-          <div className="sidebar-tools-label">Document Tools</div>
-          <button className={`btn-sidebar-tool ${showUpload ? 'active' : ''}`} onClick={() => { setShowUpload(!showUpload); setShowDocs(false); }}>
-            <Plus size={14} className="tool-icon" /><span>Upload Policy</span>
-          </button>
-          <button className={`btn-sidebar-tool ${showDocs ? 'active' : ''}`} onClick={() => { setShowDocs(!showDocs); setShowUpload(false); }}>
-            <FolderOpen size={14} className="tool-icon" /><span>Policy Library ({documents.length})</span>
-          </button>
-        </div>
+        {currentUser?.role !== 'employee' && (
+          <div className="sidebar-footer-tools">
+            <div className="sidebar-tools-label">Document Tools</div>
+            <button className={`btn-sidebar-tool ${showUpload ? 'active' : ''}`} onClick={() => { setShowUpload(!showUpload); setShowDocs(false); }}>
+              <Plus size={14} className="tool-icon" /><span>Upload Policy</span>
+            </button>
+            <button className={`btn-sidebar-tool ${showDocs ? 'active' : ''}`} onClick={() => { setShowDocs(!showDocs); setShowUpload(false); }}>
+              <FolderOpen size={14} className="tool-icon" /><span>Policy Library ({documents.length})</span>
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* ── Main Chat Workspace ── */}
@@ -285,10 +288,7 @@ export const Home = ({ currentUser, onLogout, onGoAdmin }) => {
                 <span className="quick-stat-value">{documents.length}</span>
               </div>
             </div>
-            <div className="status-badge">
-              <span className="dot-active" />
-              <span>FAISS Database Ready</span>
-            </div>
+
           </div>
         </header>
 

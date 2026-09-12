@@ -74,8 +74,8 @@ class ComplianceGraph:
             Logger.info(f"Routing query directly to response node (Intent: {intent_results['intent']})")
             state.retrieved_chunks = []
         else:
-            # Node 2: Document Retrieval using Rewritten Standalone Query + RBAC role
-            Logger.info(f"Routing standalone query '{target_query}' to retrieval node (Target Doc: {state.target_doc}, Role: {state.user_role}).")
+            # Node 2: Document Retrieval — Multi-Query + Reranking + Parent Expand
+            Logger.info(f"Routing standalone query '{target_query}' to advanced retrieval node (Target Doc: {state.target_doc}, Role: {state.user_role}).")
             chunks = retrieval_agent.retrieve_context(
                 target_query,
                 target_doc=state.target_doc,
@@ -94,16 +94,15 @@ class ComplianceGraph:
 
         # Append Two-Stage Architecture steps to execution trace logs
         if response and "steps" in response:
-            if state.rewritten_query != state.query:
-                response["steps"].insert(0, {
-                    "step": "Stage 1: Query Contextualizer (LLM Call 1)",
-                    "desc": f"Rewrote query with history into standalone search query: '{target_query}'"
-                })
-            else:
-                response["steps"].insert(0, {
-                    "step": "Stage 1: Query Contextualizer (LLM Call 1)",
-                    "desc": f"Input query is standalone: '{state.query}'"
-                })
+            rewrite_desc = (
+                f"Rewrote query into standalone + generated 2-4 multi-query variants: '{target_query}'"
+                if state.rewritten_query != state.query
+                else f"Input query is standalone: '{state.query}'. Generated 2-4 multi-query variants."
+            )
+            response["steps"].insert(0, {
+                "step": "Stage 1: Query Contextualizer + Multi-Query Generator (LLM Call 1)",
+                "desc": rewrite_desc
+            })
 
         # Store completed conversation turn into SessionManager
         if response and "answer" in response:

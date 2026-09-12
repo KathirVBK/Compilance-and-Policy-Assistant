@@ -38,9 +38,9 @@ def generate_answer(query, intent_results, retrieved_chunks, model_override=None
             "query": query,
             "model": model_override or "gemini-2.5-flash",
             "answer": (
-                "Hello! I am your Enterprise Compliance & Operations AI Assistant. I can help search the "
-                "corporate employee handbooks (such as `handbook_2025`), explain policies, and check regulations.\n\n"
-                "How can I help you today? (e.g. ask about dress code, resignation notice, or PTO accrual rates)"
+                "Hello! I am your Infosys Compliance & Policy AI Assistant, powered by the Infosys Code of Conduct. "
+                "I can search the Infosys Code of Conduct, explain policies, check compliance guidelines, and clarify ethical standards.\n\n"
+                "How can I help you today? (e.g., ask about conflicts of interest, data privacy, gifts & hospitality, or anti-bribery)"
             ),
             "citations": [],
             "verification": {
@@ -51,7 +51,7 @@ def generate_answer(query, intent_results, retrieved_chunks, model_override=None
             },
             "steps": [
                 {"step": "Analyze Query", "desc": "Identified query as a conversational greeting."},
-                {"step": "Greeting Output", "desc": "Returned standard greeting guidelines."}
+                {"step": "Greeting Output", "desc": "Returned Infosys compliance assistant greeting."}
             ]
         }
 
@@ -125,9 +125,26 @@ def generate_answer(query, intent_results, retrieved_chunks, model_override=None
 
     # 5. Execute Compliance Audit checks on citations
     steps = [
-        {"step": "Stage 2: FAISS Vector Retrieval", "desc": f"Retrieved {len(retrieved_chunks)} matching context blocks from FAISS store."},
-        {"step": "Stage 3: Answer Generation (LLM Call 2)", "desc": "Formulated final compliance response using retrieved chunks + history + original query."},
-        {"step": "Stage 4: Grounded Follow-up Generator", "desc": f"Generated {len(followups)} grounded follow-up inquiries anchored to retrieved section metadata."}
+        {
+            "step": "Stage 2: Multi-Query FAISS Retrieval",
+            "desc": f"Multi-query search retrieved {len(retrieved_chunks)} unique chunks from FAISS (after dedup + score filter)."
+        },
+        {
+            "step": "Stage 3: Cross-Encoder Reranking",
+            "desc": f"LLM reranker scored candidates and selected top {len(retrieved_chunks)} by relevance (0-10 scale)."
+        },
+        {
+            "step": "Stage 4: Parent-Child Context Expansion",
+            "desc": "Each selected chunk was expanded with sibling context from its parent section."
+        },
+        {
+            "step": "Stage 5: Answer Generation (LLM Call 2)",
+            "desc": "Formulated final compliance response using enriched context + history + original query."
+        },
+        {
+            "step": "Stage 6: Grounded Follow-up Generator",
+            "desc": f"Generated {len(followups)} grounded follow-up inquiries from Infosys CoC section metadata."
+        }
     ]
 
     # Conflict Check: checks if different versions of same document exist in citations

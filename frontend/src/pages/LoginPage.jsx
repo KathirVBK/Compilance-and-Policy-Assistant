@@ -1,45 +1,50 @@
 import React, { useState } from 'react';
-import { ShieldCheck, LogIn, Eye, EyeOff, AlertCircle, Lock, User } from 'lucide-react';
+import { ShieldCheck, LogIn, Eye, EyeOff, AlertCircle, Lock, User, Mail } from 'lucide-react';
 import { api } from '../services/api';
 
 const ROLE_COLORS = {
   admin:      '#ef4444',
   hr:         '#8b5cf6',
-  finance:    '#f59e0b',
-  legal:      '#3b82f6',
-  operations: '#10b981',
   employee:   '#00f2fe',
 };
 
 const ROLE_LABELS = {
   admin:      'System Administrator',
   hr:         'Human Resources',
-  finance:    'Finance Department',
-  legal:      'Legal & Compliance',
-  operations: 'Operations',
-  employee:   'Employee',
+  employee:   'Standard Employee',
 };
 
 export const LoginPage = ({ onLoginSuccess }) => {
-  const [username, setUsername]     = useState('');
   const [password, setPassword]     = useState('');
+  const [name, setName]             = useState('');
+  const [email, setEmail]           = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
   const [showPass, setShowPass]     = useState(false);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      setError('Please enter both username and password.');
+    const activeUser = email.trim();
+    if (!activeUser || !password.trim() || (isRegistering && (!name.trim() || !confirmPassword.trim()))) {
+      setError('Please fill all required fields.');
+      return;
+    }
+    if (isRegistering && password !== confirmPassword) {
+      setError('Passwords do not match.');
       return;
     }
     setLoading(true);
     setError('');
     try {
-      const result = await api.login(username.trim(), password);
+      if (isRegistering) {
+        await api.register(activeUser, password, name.trim(), activeUser);
+      }
+      const result = await api.login(activeUser, password);
       if (onLoginSuccess) onLoginSuccess(result.user);
     } catch (err) {
-      setError(err.message || 'Invalid credentials. Please try again.');
+      setError(err.message || (isRegistering ? 'Registration failed. Please try again.' : 'Invalid credentials. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -66,8 +71,12 @@ export const LoginPage = ({ onLoginSuccess }) => {
 
         <div className="login-divider" />
 
-        <h2 className="login-heading">Sign in to your account</h2>
-        <p className="login-subheading">Access is role-restricted. Contact your admin for credentials.</p>
+        <h2 className="login-heading">{isRegistering ? "Create an account" : "Sign in to your account"}</h2>
+        <p className="login-subheading">
+          {isRegistering 
+            ? "Sign up to access the Enterprise Compliance Assistant." 
+            : "Access is role-restricted. Contact your admin for credentials."}
+        </p>
 
         {/* Error Banner */}
         {error && (
@@ -79,19 +88,38 @@ export const LoginPage = ({ onLoginSuccess }) => {
 
         {/* Form */}
         <form className="login-form" onSubmit={handleSubmit}>
+          {isRegistering && (
+            <div className="login-field-group">
+              <label className="login-label">
+                <User size={13} />
+                Full Name
+              </label>
+              <input
+                id="login-name"
+                type="text"
+                className="login-input"
+                placeholder="Enter your full name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                autoComplete="name"
+                disabled={loading}
+              />
+            </div>
+          )}
+
           <div className="login-field-group">
             <label className="login-label">
-              <User size={13} />
-              Username
+              <Mail size={13} />
+              Email Address
             </label>
             <input
-              id="login-username"
+              id="login-email"
               type="text"
               className="login-input"
-              placeholder="Enter your username"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              autoComplete="username"
+              placeholder="Enter your email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              autoComplete="email"
               autoFocus
               disabled={loading}
             />
@@ -100,7 +128,7 @@ export const LoginPage = ({ onLoginSuccess }) => {
           <div className="login-field-group">
             <label className="login-label">
               <Lock size={13} />
-              Password
+              {isRegistering ? "Create Password" : "Password"}
             </label>
             <div className="login-password-wrapper">
               <input
@@ -124,39 +152,56 @@ export const LoginPage = ({ onLoginSuccess }) => {
             </div>
           </div>
 
+          {isRegistering && (
+            <div className="login-field-group">
+              <label className="login-label">
+                <Lock size={13} />
+                Confirm Password
+              </label>
+              <div className="login-password-wrapper">
+                <input
+                  id="login-confirm-password"
+                  type={showPass ? 'text' : 'password'}
+                  className="login-input"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          )}
+
           <button
             id="login-submit-btn"
             type="submit"
             className="login-submit-btn"
-            disabled={loading || !username.trim() || !password.trim()}
+            disabled={loading || !password.trim() || !email.trim() || (isRegistering && (!name.trim() || !confirmPassword.trim()))}
           >
             {loading ? (
               <span className="login-spinner" />
             ) : (
               <>
                 <LogIn size={15} />
-                <span>Sign In</span>
+                <span>{isRegistering ? "Sign Up" : "Sign In"}</span>
               </>
             )}
           </button>
+
+          <div style={{ textAlign: "center", marginTop: "1rem", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+            {isRegistering ? "Already have an account? " : "Don't have an account? "}
+            <button 
+              type="button" 
+              onClick={() => { setIsRegistering(!isRegistering); setError(''); }}
+              style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", fontWeight: "600" }}
+            >
+              {isRegistering ? "Sign In" : "Sign Up"}
+            </button>
+          </div>
         </form>
 
-        {/* Role legend */}
-        <div className="login-role-legend">
-          <div className="login-legend-title">Available Access Roles</div>
-          <div className="login-roles-grid">
-            {Object.entries(ROLE_LABELS).map(([role, label]) => (
-              <div key={role} className="login-role-chip" style={{ borderColor: ROLE_COLORS[role] + '44' }}>
-                <span className="login-role-dot" style={{ background: ROLE_COLORS[role] }} />
-                <span className="login-role-name">{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        <p className="login-default-hint">
-          Default admin: <code>admin</code> / <code>admin123</code>
-        </p>
       </div>
     </div>
   );

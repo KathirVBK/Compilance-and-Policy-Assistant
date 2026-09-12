@@ -3,6 +3,7 @@ import Home       from './pages/Home';
 import LoginPage  from './pages/LoginPage';
 import AdminPanel from './pages/AdminPanel';
 import { api }   from './services/api';
+import { ThemeToggle } from './components/UI/ThemeToggle';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(() => api.getCurrentUser());
@@ -34,6 +35,7 @@ function App() {
     return (
       <div className="App">
         <LoginPage onLoginSuccess={handleLoginSuccess} />
+        <ThemeToggle />
       </div>
     );
   }
@@ -43,6 +45,7 @@ function App() {
     return (
       <div className="App">
         <AdminPanel currentUser={currentUser} onBack={handleGoHome} />
+        <ThemeToggle />
       </div>
     );
   }
@@ -55,6 +58,7 @@ function App() {
         onLogout={handleLogout}
         onGoAdmin={currentUser.role === 'admin' ? handleGoAdmin : null}
       />
+      <ThemeToggle />
     </div>
   );
 }

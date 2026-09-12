@@ -4,6 +4,17 @@ from typing import List, Dict
 from backend.llm import gemini
 from backend.utils.logger import Logger
 
+SYSTEM_MULTI_QUERY_PROMPT = (
+    "You are a Query Expansion Engine for a corporate policy compliance assistant. "
+    "Given a user query, generate 3 semantically diverse reformulations that together cover different facets: "
+    "the direct rule, exceptions/edge cases, and penalties or procedures.\n\n"
+    "RULES:\n"
+    "1. Output EXACTLY 3 queries, one per line, numbered 1. 2. 3.\n"
+    "2. Each query must be standalone and retrievable against a policy vector database.\n"
+    "3. Do NOT include the original query in the output.\n"
+    "4. Keep each query concise (under 25 words)."
+)
+
 SYSTEM_REWRITE_PROMPT = (
     "You are a Query Contextualizer. Given the conversation history and the latest user question, "
     "rewrite the latest question into a standalone, self-contained search query that incorporates all "
@@ -73,3 +84,50 @@ def rewrite_query(query: str, history: List[Dict[str, str]] = None) -> str:
         Logger.error(f"Query rewriter error: {e}")
         
     return clean_q
+
+
+def generate_multi_queries(query: str) -> List[str]:
+    """
+    Multi-Query Retrieval: generates 2-4 semantically diverse reformulations
+    of the original query to maximize retrieval recall across different facets
+    (direct rule, exceptions, procedures, penalties).
+
+    Returns a list starting with the original query followed by LLM variants.
+    Always returns at least [query] if LLM fails.
+    """
+    clean_q = query.strip()
+    prompt = f"User Query: {clean_q}\n\nGenerate 3 diverse reformulations:"
+
+    try:
+        raw = gemini.generate_response(
+            prompt, SYSTEM_MULTI_QUERY_PROMPT, model_override="gemini-2.5-flash"
+        )
+        if not raw:
+            return [clean_q]
+
+        # Parse numbered lines: "1. ...", "2. ...", "3. ..."
+        variants = []
+        for line in raw.strip().split('\n'):
+            line = line.strip()
+            # Strip leading numbering like "1." or "1)"
+            cleaned = re.sub(r'^\d+[.)]\s*', '', line).strip()
+            if cleaned and len(cleaned) > 5:
+                variants.append(cleaned)
+
+        # Deduplicate and limit to 3 variants
+        seen = {clean_q.lower()}
+        unique_variants = []
+        for v in variants[:3]:
+            if v.lower() not in seen:
+                seen.add(v.lower())
+                unique_variants.append(v)
+
+        all_queries = [clean_q] + unique_variants
+        Logger.info(f"Multi-Query Rewriter: {len(all_queries)} queries generated for: '{clean_q[:60]}'")
+        for i, q in enumerate(all_queries):
+            Logger.info(f"  Query [{i}]: {q}")
+        return all_queries
+
+    except Exception as e:
+        Logger.error(f"Multi-Query Rewriter failed: {e}. Using original query only.")
+        return [clean_q]

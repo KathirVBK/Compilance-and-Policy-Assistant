@@ -12,7 +12,7 @@ USERS_FILE = os.path.join(os.path.dirname(__file__), '..', '..', 'users.json')
 SECRET_KEY = os.getenv("JWT_SECRET", "policy_buddy_jwt_secret_key_2025")
 TOKEN_EXPIRY_HOURS = 24
 
-VALID_ROLES = ["admin", "hr", "finance", "legal", "operations", "employee"]
+VALID_ROLES = ["admin", "hr", "employee"]
 
 # ─── Simple JWT (no external lib dependency) ─────────────────────────────────
 import base64
@@ -79,16 +79,16 @@ def _ensure_default_admin():
     if not any(u["role"] == "admin" for u in users):
         users.append({
             "id": str(uuid.uuid4()),
-            "username": "admin",
-            "password": _hash_password("admin123"),
+            "username": "kathirvb24@mail.com",
+            "password": _hash_password("vbk241005"),
             "role": "admin",
-            "name": "System Administrator",
-            "email": "admin@company.com",
+            "name": "Kathir",
+            "email": "kathirvb24@mail.com",
             "created_at": datetime.utcnow().isoformat(),
             "active": True
         })
         _save_users(users)
-        Logger.info("Default admin user created (admin / admin123). Please change the password.")
+        Logger.info("Default admin user created (kathirvb24@mail.com / vbk241005).")
 
 # Ensure admin exists on import
 _ensure_default_admin()

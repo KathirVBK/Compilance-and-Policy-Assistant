@@ -7,13 +7,13 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 
-const ROLES       = ['admin', 'hr', 'finance', 'legal', 'operations', 'employee'];
-const ROLE_COLORS = { admin:'#ef4444', hr:'#8b5cf6', finance:'#f59e0b', legal:'#3b82f6', operations:'#10b981', employee:'#00f2fe' };
+const ROLES       = ['admin', 'hr', 'employee'];
+const ROLE_COLORS = { admin:'#ef4444', hr:'#8b5cf6', employee:'#00f2fe' };
 const SEV_COLORS  = { info:'var(--primary)', warning:'var(--warning)', high:'var(--danger)' };
 
 // ── Tiny helpers ──────────────────────────────────────────────────────────────
 const RoleBadge = ({ role }) => (
-  <span className="rbac-role-badge" style={{ borderColor: (ROLE_COLORS[role] || '#64748b') + '55', color: ROLE_COLORS[role] || '#64748b' }}>
+  <span className="rbac-role-badge" style={{ backgroundColor: ROLE_COLORS[role] || '#64748b', borderColor: ROLE_COLORS[role] || '#64748b', color: '#fff' }}>
     {role}
   </span>
 );
@@ -106,37 +106,57 @@ const UsersTab = () => {
       {loading ? (
         <div className="admin-loading"><Loader2 size={20} className="spinning" /> Loading users...</div>
       ) : (
-        <div className="admin-table-wrap">
-          <div className="admin-table-head admin-user-cols">
-            <span>Name</span><span>Username</span><span>Role</span><span>Created</span><span></span>
-          </div>
-          {users.map(u => (
-            <div key={u.id} className="admin-table-row admin-user-cols">
-              <div>
-                <div className="admin-row-title">{u.name}</div>
-                <div className="admin-row-sub">{u.email}</div>
-              </div>
-              <div><code>{u.username}</code></div>
-              <div>
-                <select
-                  className="admin-role-select"
-                  value={u.role}
-                  style={{ color: ROLE_COLORS[u.role] || '#64748b' }}
-                  onChange={e => handleRoleChange(u.username, e.target.value)}
-                >
-                  {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              <div className="admin-row-sub">{u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</div>
-              <div>
-                {u.role !== 'admin' && (
-                  <button className="admin-del-btn" onClick={() => handleDelete(u.username)}>
-                    <Trash2 size={13} />
-                  </button>
-                )}
-              </div>
+        <div className="admin-users-list">
+          <div className="admin-list-actions">
+            <div className="admin-search-wrapper">
+              <input type="text" className="admin-input admin-search" placeholder="Filter accounts..." />
             </div>
-          ))}
+          </div>
+          {users.map(u => {
+            const initials = u.name ? u.name.substring(0, 2).toUpperCase() : 'U';
+            const roleColor = ROLE_COLORS[u.role] || '#64748b';
+            
+            return (
+              <div key={u.id} className="admin-user-card">
+                <div className="admin-user-card-left">
+                  <div className="admin-user-avatar" style={{ backgroundColor: roleColor }}>
+                    {initials}
+                  </div>
+                  <div className="admin-user-details">
+                    <div className="admin-user-name-row">
+                      <span className="admin-row-title">{u.name}</span>
+                      <RoleBadge role={u.role} />
+                    </div>
+                    <div className="admin-row-sub email-sub">{u.email || u.username}</div>
+                    <div className="admin-row-sub date-sub">
+                      Created: {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="admin-user-card-right">
+                  <div className="admin-access-tier">
+                    <label>ACCESS TIER</label>
+                    <div className="admin-role-dropdown-wrapper">
+                      <select
+                        className="admin-role-select-modern"
+                        value={u.role}
+                        style={{ color: roleColor, borderColor: roleColor + '55' }}
+                        onChange={e => handleRoleChange(u.username, e.target.value)}
+                      >
+                        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {u.role !== 'admin' && (
+                    <button className="admin-del-btn" onClick={() => handleDelete(u.username)}>
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

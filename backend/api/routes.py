@@ -141,6 +141,9 @@ async def get_documents(
 @router.delete("/documents/{doc_title}")
 async def delete_document(doc_title: str, authorization: Optional[str] = Header(None)):
     caller = _get_user_from_request(authorization)
+    if caller["role"] not in ["admin", "hr"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions to delete documents.")
+    
     Logger.info(f"Deleting document: {doc_title}")
 
     # Filter metadata
@@ -195,6 +198,9 @@ async def upload_file(
     authorization: Optional[str]     = Header(None)
 ):
     caller     = _get_user_from_request(authorization)
+    if caller["role"] not in ["admin", "hr"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions to upload documents.")
+        
     temp_filename = f"temp-{file.filename}"
     save_path  = os.path.join(Config.UPLOAD_DIR, temp_filename)
 
@@ -271,37 +277,23 @@ async def synthesize_speech(req: TTSRequest):
 @router.post("/reset")
 async def reset_database(authorization: Optional[str] = Header(None)):
     caller = _get_user_from_request(authorization)
+    if caller["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Only administrators can reset the database.")
+        
     Logger.info("Resetting entire knowledge DB...")
 
     uploaded_store.reset()
     uploaded_store.save()
     enterprise_store.reset()
 
-    handbook_path = os.path.join(Config.ENTERPRISE_DOCS_DIR, "handbook_2025.txt")
-    if os.path.exists(handbook_path):
-        with open(handbook_path, "r", encoding="utf-8") as f:
-            text = f.read()
-
-        enterprise_store.add_document(
-            title="Employee Handbook (Endeavors)",
-            category="Compliance & Operations",
-            text=text,
-            version="2.0",
-            date="2025-01-01",
-            author="CFO & HR Office"
-        )
-        enterprise_store.save()
-
-        AuditLogger.log(
-            action="reset_database",
-            user=caller["username"],
-            role=caller["role"],
-            severity="high",
-            details="Vector database fully reset and rebuilt from handbook_2025.txt."
-        )
-        return {"message": "FAISS Index successfully rebuilt from handbook_2025.txt and uploads cleared."}
-    else:
-        raise HTTPException(status_code=404, detail="handbook_2025.txt missing from enterprise directory.")
+    AuditLogger.log(
+        action="reset_database",
+        user=caller["username"],
+        role=caller["role"],
+        severity="high",
+        details="Vector database fully reset."
+    )
+    return {"message": "FAISS Index successfully reset and uploads cleared."}
 
 
 # ─── Categories / Tags (for frontend filter chips) ───────────────────────────

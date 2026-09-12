@@ -13,6 +13,12 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    name: str
+    email: str = ""
+
 class ChangePasswordRequest(BaseModel):
     username: str
     new_password: str
@@ -47,6 +53,22 @@ async def login(req: LoginRequest):
     )
     Logger.info(f"User '{req.username}' authenticated successfully.")
     return result
+
+
+@auth_router.post("/register")
+async def register(req: RegisterRequest):
+    try:
+        user = AuthManager.create_user(req.username, req.password, "employee", req.name, req.email)
+        AuditLogger.log(
+            action="register",
+            user=req.username,
+            role="employee",
+            severity="info",
+            details=f"User '{req.username}' registered successfully."
+        )
+        return {"message": "User registered successfully", "user": user}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @auth_router.post("/logout")

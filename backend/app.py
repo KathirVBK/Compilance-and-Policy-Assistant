@@ -34,33 +34,42 @@ app.include_router(admin_router, prefix="/api/admin")
 async def startup_event():
     Logger.info("Starting up Enterprise Compliance FastAPI Server v3.0...")
 
-    # Auto-compile handbook if FAISS enterprise index is empty
+    # Auto-index Infosys Code of Conduct if FAISS enterprise index is empty
     if len(enterprise_store.metadata) == 0:
-        Logger.info("FAISS Enterprise Index is empty. Auto-compiling from handbook_2025.txt...")
-        handbook_path = os.path.join(Config.ENTERPRISE_DOCS_DIR, 'handbook_2025.txt')
+        Logger.info("FAISS Enterprise Index is empty. Auto-indexing codeofconduct.pdf (structured path)...")
+        coc_path = os.path.join(Config.ENTERPRISE_DOCS_DIR, 'codeofconduct.pdf')
 
-        if os.path.exists(handbook_path):
+        if os.path.exists(coc_path):
             try:
-                with open(handbook_path, 'r', encoding='utf-8') as f:
-                    text = f.read()
+                from backend.rag.document_loader import load_document_structured
+                from backend.rag.text_splitter import split_text
 
-                success = enterprise_store.add_document(
-                    title="Employee Handbook (Endeavors)",
-                    category="Compliance & Operations",
-                    text=text,
-                    version="2.0",
-                    date="2025-01-01",
-                    author="CFO & HR Office"
-                )
-                if success:
-                    Logger.info("Auto-compilation complete! handbook_2025 indexed successfully.")
+                # 1. Page-aware structured extraction
+                blocks = load_document_structured(coc_path)
+                if blocks:
+                    # 2. Hierarchical + semantic chunking (400-700 tokens, 12% overlap)
+                    chunks = split_text(blocks)
+                    Logger.info(f"Produced {len(chunks)} hierarchical chunks from codeofconduct.pdf")
+
+                    # 3. Use structured indexing path to preserve section/page metadata
+                    success = enterprise_store.add_structured_chunks(
+                        title="Infosys Code of Conduct",
+                        category="Compliance & Ethics",
+                        chunks=chunks,
+                        version="2024",
+                        date="2024-01-01",
+                        author="Infosys Limited"
+                    )
+                    if success:
+                        Logger.info("Auto-indexing complete! Infosys Code of Conduct indexed with full section/page metadata.")
+                    else:
+                        Logger.error("Auto-indexing failed to write vectors.")
                 else:
-                    Logger.error("Auto-compilation failed to write vectors.")
+                    Logger.error("Structured extraction produced no blocks from codeofconduct.pdf.")
             except Exception as e:
-                Logger.error(f"Auto-compilation error: {e}")
+                Logger.error(f"Auto-indexing error: {e}")
         else:
-            Logger.warn(f"handbook_2025.txt missing from {Config.ENTERPRISE_DOCS_DIR}.")
-
+            Logger.warn(f"codeofconduct.pdf missing from {Config.ENTERPRISE_DOCS_DIR}.")
     Logger.info("Server ready. Auth routes: /api/auth | Admin routes: /api/admin")
 
 
