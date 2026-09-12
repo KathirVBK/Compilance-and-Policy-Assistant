@@ -1,0 +1,28 @@
+services:
+  # Backend API Service
+  - type: web
+    name: policy-buddy-backend
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn backend.app:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: API_KEY
+        sync: false # User must set this manually in the Render Dashboard
+
+  # Frontend Static Site
+  - type: web
+    name: policy-buddy-frontend
+    env: node
+    rootDir: frontend
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm run preview -- --host 0.0.0.0 --port $PORT"
+    envVars:
+      # Unfortunately Render doesn't let you easily append `/api` to `fromService`.
+      # The best approach is to configure the backend base URL.
+      # You can override this manually in Render Dashboard if needed.
+      - key: VITE_API_URL
+        value: "https://policy-buddy-backend.onrender.com/api"
