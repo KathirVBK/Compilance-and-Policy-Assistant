@@ -107,8 +107,8 @@ def multi_retrieve(
     seen_ids: set = set()
     merged: List[Dict[str, Any]] = []
 
-    # Run all query variants in parallel
-    with ThreadPoolExecutor(max_workers=len(queries)) as executor:
+    # Run all query variants sequentially to prevent OOM on Render free tier
+    with ThreadPoolExecutor(max_workers=1) as executor:
         futures = {executor.submit(_search_one, q): q for q in queries}
         for future in as_completed(futures):
             try:

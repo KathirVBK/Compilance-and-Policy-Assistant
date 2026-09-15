@@ -101,7 +101,7 @@ def generate_answer(query, intent_results, retrieved_chunks, model_override=None
     import concurrent.futures
     from backend.agents import followup_agent
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         future_llm = executor.submit(gemini.generate_response, user_prompt, system_instruction, model_override)
         future_followups = executor.submit(followup_agent.generate_followup_suggestions, query, retrieved_chunks)
         
