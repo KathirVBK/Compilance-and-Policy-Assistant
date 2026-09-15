@@ -1,4 +1,12 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+let API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
+// Auto-correct common deployment misconfigurations (e.g., adding :3000 or using http on Render)
+if (API_BASE.includes("onrender.com")) {
+  API_BASE = API_BASE.replace(/:\d+(?=\/|$)/, "");
+  if (API_BASE.startsWith("http://")) {
+    API_BASE = API_BASE.replace("http://", "https://");
+  }
+}
 
 // ─── Auth token helpers ───────────────────────────────────────────────────────
 const getToken  = () => localStorage.getItem("pb_token") || "";
