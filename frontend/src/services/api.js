@@ -7,11 +7,19 @@ const getUser   = () => {
 };
 const authHeader = () => ({ Authorization: `Bearer ${getToken()}` });
 
+const customFetch = async (url, options) => {
+  const res = await fetch(url, options);
+  if (res.status === 401) {
+    window.dispatchEvent(new Event("auth:unauthorized"));
+  }
+  return res;
+};
+
 // ─── API Service ──────────────────────────────────────────────────────────────
 export const api = {
   // ── Auth ────────────────────────────────────────────────────────────────────
   async login(username, password) {
-    const res = await fetch(`${API_BASE}/auth/login`, {
+    const res = await customFetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password })
@@ -27,7 +35,7 @@ export const api = {
   },
 
   async register(username, password, name, email) {
-    const res = await fetch(`${API_BASE}/auth/register`, {
+    const res = await customFetch(`${API_BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password, name, email })
@@ -41,7 +49,7 @@ export const api = {
 
   async logout() {
     try {
-      await fetch(`${API_BASE}/auth/logout`, {
+      await customFetch(`${API_BASE}/auth/logout`, {
         method: "POST",
         headers: authHeader()
       });
@@ -51,13 +59,13 @@ export const api = {
   },
 
   async getMe() {
-    const res = await fetch(`${API_BASE}/auth/me`, { headers: authHeader() });
+    const res = await customFetch(`${API_BASE}/auth/me`, { headers: authHeader() });
     if (!res.ok) throw new Error("Not authenticated");
     return res.json();
   },
 
   async getRoles() {
-    const res = await fetch(`${API_BASE}/auth/roles`, { headers: authHeader() });
+    const res = await customFetch(`${API_BASE}/auth/roles`, { headers: authHeader() });
     if (!res.ok) throw new Error("Failed to fetch roles");
     return res.json();
   },
@@ -67,7 +75,7 @@ export const api = {
 
   // ── Models ──────────────────────────────────────────────────────────────────
   async getModels() {
-    const res = await fetch(`${API_BASE}/models`, { headers: authHeader() });
+    const res = await customFetch(`${API_BASE}/models`, { headers: authHeader() });
     if (!res.ok) throw new Error("Failed to fetch models");
     return res.json();
   },
@@ -75,7 +83,7 @@ export const api = {
   // ── Query ───────────────────────────────────────────────────────────────────
   async queryAgent(query, model, history = [], sessionId = null, targetDoc = null) {
     const user = getUser();
-    const res = await fetch(`${API_BASE}/query`, {
+    const res = await customFetch(`${API_BASE}/query`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify({
@@ -97,13 +105,13 @@ export const api = {
     if (category) params.append("category", category);
     if (tag)      params.append("tag", tag);
     const qs  = params.toString() ? `?${params}` : "";
-    const res = await fetch(`${API_BASE}/documents${qs}`, { headers: authHeader() });
+    const res = await customFetch(`${API_BASE}/documents${qs}`, { headers: authHeader() });
     if (!res.ok) throw new Error("Failed to fetch documents");
     return res.json();
   },
 
   async deleteDocument(title) {
-    const res = await fetch(`${API_BASE}/documents/${encodeURIComponent(title)}`, {
+    const res = await customFetch(`${API_BASE}/documents/${encodeURIComponent(title)}`, {
       method: "DELETE",
       headers: authHeader()
     });
@@ -112,14 +120,14 @@ export const api = {
   },
 
   async getCategories() {
-    const res = await fetch(`${API_BASE}/categories`, { headers: authHeader() });
+    const res = await customFetch(`${API_BASE}/categories`, { headers: authHeader() });
     if (!res.ok) throw new Error("Failed to fetch categories");
     return res.json();
   },
 
   // ── Upload ──────────────────────────────────────────────────────────────────
   async uploadDocument(formData) {
-    const res = await fetch(`${API_BASE}/upload`, {
+    const res = await customFetch(`${API_BASE}/upload`, {
       method: "POST",
       headers: authHeader(),   // No Content-Type: let browser set multipart boundary
       body: formData
@@ -135,7 +143,7 @@ export const api = {
   async transcribeSpeech(audioBlob) {
     const formData = new FormData();
     formData.append("file", audioBlob, "audio.webm");
-    const res = await fetch(`${API_BASE}/speech/transcribe`, {
+    const res = await customFetch(`${API_BASE}/speech/transcribe`, {
       method: "POST",
       headers: authHeader(),
       body: formData
@@ -145,7 +153,7 @@ export const api = {
   },
 
   async synthesizeSpeech(text) {
-    const res = await fetch(`${API_BASE}/speech/synthesize`, {
+    const res = await customFetch(`${API_BASE}/speech/synthesize`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify({ text })
@@ -156,7 +164,7 @@ export const api = {
 
   // ── Reset ───────────────────────────────────────────────────────────────────
   async resetDatabase() {
-    const res = await fetch(`${API_BASE}/reset`, {
+    const res = await customFetch(`${API_BASE}/reset`, {
       method: "POST",
       headers: authHeader()
     });
@@ -166,13 +174,13 @@ export const api = {
 
   // ── Admin ───────────────────────────────────────────────────────────────────
   async getUsers() {
-    const res = await fetch(`${API_BASE}/admin/users`, { headers: authHeader() });
+    const res = await customFetch(`${API_BASE}/admin/users`, { headers: authHeader() });
     if (!res.ok) throw new Error("Failed to fetch users");
     return res.json();
   },
 
   async createUser(data) {
-    const res = await fetch(`${API_BASE}/admin/users`, {
+    const res = await customFetch(`${API_BASE}/admin/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify(data)
@@ -185,7 +193,7 @@ export const api = {
   },
 
   async deleteUser(username) {
-    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(username)}`, {
+    const res = await customFetch(`${API_BASE}/admin/users/${encodeURIComponent(username)}`, {
       method: "DELETE",
       headers: authHeader()
     });
@@ -197,7 +205,7 @@ export const api = {
   },
 
   async updateUserRole(username, role) {
-    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(username)}/role`, {
+    const res = await customFetch(`${API_BASE}/admin/users/${encodeURIComponent(username)}/role`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify({ role })
@@ -209,13 +217,13 @@ export const api = {
   async getAuditLog(limit = 200, severity = null) {
     const params = new URLSearchParams({ limit });
     if (severity) params.append("severity", severity);
-    const res = await fetch(`${API_BASE}/admin/audit-log?${params}`, { headers: authHeader() });
+    const res = await customFetch(`${API_BASE}/admin/audit-log?${params}`, { headers: authHeader() });
     if (!res.ok) throw new Error("Failed to fetch audit log");
     return res.json();
   },
 
   async clearAuditLog() {
-    const res = await fetch(`${API_BASE}/admin/audit-log`, {
+    const res = await customFetch(`${API_BASE}/admin/audit-log`, {
       method: "DELETE",
       headers: authHeader()
     });
@@ -224,13 +232,13 @@ export const api = {
   },
 
   async getAdminStats() {
-    const res = await fetch(`${API_BASE}/admin/stats`, { headers: authHeader() });
+    const res = await customFetch(`${API_BASE}/admin/stats`, { headers: authHeader() });
     if (!res.ok) throw new Error("Failed to fetch stats");
     return res.json();
   },
 
   async updateDocRoles(docTitle, allowedRoles) {
-    const res = await fetch(`${API_BASE}/admin/documents/${encodeURIComponent(docTitle)}/roles`, {
+    const res = await customFetch(`${API_BASE}/admin/documents/${encodeURIComponent(docTitle)}/roles`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify({ allowed_roles: allowedRoles })
@@ -240,7 +248,7 @@ export const api = {
   },
 
   async updateDocTags(docTitle, tags) {
-    const res = await fetch(`${API_BASE}/admin/documents/${encodeURIComponent(docTitle)}/tags`, {
+    const res = await customFetch(`${API_BASE}/admin/documents/${encodeURIComponent(docTitle)}/tags`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", ...authHeader() },
       body: JSON.stringify({ tags })

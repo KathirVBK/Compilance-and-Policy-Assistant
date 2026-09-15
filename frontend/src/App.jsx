@@ -13,7 +13,23 @@ function App() {
   useEffect(() => {
     const onHash = () => setHash(window.location.hash || '#/');
     window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    
+    const handleUnauthorized = () => {
+      handleLogout();
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    
+    // Verify token on mount if user exists in local storage
+    if (currentUser) {
+      api.getMe().catch(() => {
+        handleUnauthorized();
+      });
+    }
+
+    return () => {
+      window.removeEventListener('hashchange', onHash);
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
   }, []);
 
   const handleLoginSuccess = (user) => {
