@@ -11,7 +11,7 @@ class Config:
     if not BASE_URL.endswith('/'):
         BASE_URL += '/'
         
-    SELECTED_MODEL = os.getenv("SELECTED_MODEL", "gemini-2.5-flash")
+    SELECTED_MODEL = os.getenv("SELECTED_MODEL", "gpt-4.1-nano")
     EMBED_MODEL = "text-embedding-3-small"
     EMBED_DIM = 1536
     

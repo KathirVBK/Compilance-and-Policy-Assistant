@@ -19,7 +19,7 @@ export const Home = ({ currentUser, onLogout, onGoAdmin }) => {
   const [sessionId, setSessionId]         = useState(() => 'sess-' + Math.random().toString(36).substring(2, 10));
   const [messages, setMessages]           = useState([]);
   const [_models, setModels]              = useState([]);
-  const [_selectedModel]                  = useState('gemini-2.5-flash');
+  const [_selectedModel]                  = useState('gpt-4.1-nano');
   const [documents, setDocuments]         = useState([]);
   const [loading, setLoading]             = useState(false);
   const [showUpload, setShowUpload]       = useState(false);
