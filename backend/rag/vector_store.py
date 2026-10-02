@@ -349,6 +349,10 @@ class VectorStore:
         parent_sec = target.get("parent_section", target.get("section", ""))
         doc_title  = target.get("docTitle", "")
 
+        # Do not expand overly broad "General" sections
+        if parent_sec == "General":
+            return target.get("rawText", target.get("content", ""))
+
         # Collect all sibling chunks in the same parent section
         siblings = [
             m for m in self.metadata
@@ -361,4 +365,15 @@ class VectorStore:
 
         # Sort siblings by page then chunk index order
         siblings.sort(key=lambda m: (m.get("page", 0),))
+        
+        # Limit the expansion to avoid diluting context or exceeding token limits
+        if len(siblings) > 5:
+            try:
+                target_idx = next(i for i, s in enumerate(siblings) if s.get("id") == chunk_id)
+                start_idx = max(0, target_idx - 2)
+                end_idx = min(len(siblings), target_idx + 3)
+                siblings = siblings[start_idx:end_idx]
+            except StopIteration:
+                siblings = siblings[:5]
+
         return " ".join(s.get("rawText", s.get("content", "")) for s in siblings)
