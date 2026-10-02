@@ -44,7 +44,11 @@ def simulate_response(prompt):
     """High-fidelity local rules fallback matching context items"""
     Logger.info("Simulating local text matching response...")
     
-    lower_prompt = prompt.lower()
+    # Extract just the user query to avoid matching against the entire context/history
+    if "User Query:" in prompt:
+        lower_prompt = prompt.split("User Query:")[-1].lower()
+    else:
+        lower_prompt = prompt.lower()
     
     if "dress code" in lower_prompt:
         return (
